@@ -1,0 +1,31 @@
+{
+  "name": "whitelist-dapp",
+  "version": "1.0.0",
+  "description": "",
+  "main": "index.js",
+  "scripts": {
+    "dev": "next dev",
+    "build": "next build",
+    "start": "next start",
+    "lint": "next lint",
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "devDependencies": {
+    "@nomicfoundation/hardhat-toolbox": "^2.0.0",
+    "hardhat": "^2.12.4"
+  },
+  "dependencies": {
+    "dotenv": "^16.0.3",
+    "@next/font": "13.1.1",
+    "eslint": "8.30.0",
+    "eslint-config-next": "13.1.1",
+    "ethers": "^5.7.2",
+    "next": "13.1.1",
+    "react": "18.2.0",
+    "react-dom": "18.2.0",
+    "web3modal": "^1.9.10"
+  }
+}
