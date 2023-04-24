@@ -139,21 +139,7 @@ export default function Home() {
         .finally(() => {
           checkWhitelist();
         });
-      // .finally((data) => {
-      //   console.log(data._network.chainId);
-      //   const chainId = data.getNetwork();
-      //   console.log(chainId);
-      // if (chainId === 5) {
-      //   setContractAddress(GOERLI_WHITELIST_CONTRACT_ADDRESS);
-      // } else if (chainId === 11155111) {
-      //   setContractAddress(SEPOLIA_WHITELIST_CONTRACT_ADDRESS);
-      // } else {
-      //   window.alert("Change the network to Goerli or Sepolia");
-      //   throw new Error("Change network to Goerli or Sepolia");
-      // }
       console.log("connect wallet", contractAddress);
-      // }
-      // );
 
       setWalletConnected(true);
 
