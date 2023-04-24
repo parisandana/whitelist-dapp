@@ -3,7 +3,11 @@ import styles from "../styles/Home.module.css";
 import Web3Modal from "web3modal";
 import { providers, Contract } from "ethers";
 import { useEffect, useRef, useState } from "react";
-import { WHITELIST_CONTRACT_ADDRESS, abi } from "../constants";
+import {
+  GOERLI_WHITELIST_CONTRACT_ADDRESS,
+  SEPOLIA_WHITELIST_CONTRACT_ADDRESS,
+  ABI,
+} from "../constants";
 
 export default function Home() {
   // walletConnected keep track of whether the user's wallet is connected or not
@@ -14,6 +18,9 @@ export default function Home() {
   const [loading, setLoading] = useState(false);
   // numberOfWhitelisted tracks the number of addresses's whitelisted
   const [numberOfWhitelisted, setNumberOfWhitelisted] = useState(0);
+  const [contractAddress, setContractAddress] = useState(
+    SEPOLIA_WHITELIST_CONTRACT_ADDRESS
+  );
   // Create a reference to the Web3 Modal (used for connecting to Metamask) which persists as long as the page is open
   const web3ModalRef = useRef();
 
@@ -33,14 +40,8 @@ export default function Home() {
     // Connect to Metamask
     // Since we store `web3Modal` as a reference, we need to access the `current` value to get access to the underlying object
     const provider = await web3ModalRef.current.connect();
+    // console.log("after connect provider", provider);
     const web3Provider = new providers.Web3Provider(provider);
-
-    // If user is not connected to the Goerli network, let them know and throw an error
-    const { chainId } = await web3Provider.getNetwork();
-    if (chainId !== 5) {
-      window.alert("Change the network to Goerli");
-      throw new Error("Change network to Goerli");
-    }
 
     if (needSigner) {
       const signer = web3Provider.getSigner();
@@ -58,11 +59,7 @@ export default function Home() {
       const signer = await getProviderOrSigner(true);
       // Create a new instance of the Contract with a Signer, which allows
       // update methods
-      const whitelistContract = new Contract(
-        WHITELIST_CONTRACT_ADDRESS,
-        abi,
-        signer
-      );
+      const whitelistContract = new Contract(contractAddress, ABI, signer);
       // call the addAddressToWhitelist from the contract
       const tx = await whitelistContract.addAddressToWhitelist();
       setLoading(true);
@@ -87,11 +84,7 @@ export default function Home() {
       const provider = await getProviderOrSigner();
       // We connect to the Contract using a Provider, so we will only
       // have read-only access to the Contract
-      const whitelistContract = new Contract(
-        WHITELIST_CONTRACT_ADDRESS,
-        abi,
-        provider
-      );
+      const whitelistContract = new Contract(contractAddress, ABI, provider);
       // call the numAddressesWhitelisted from the contract
       const _numberOfWhitelisted =
         await whitelistContract.numAddressesWhitelisted();
@@ -110,11 +103,7 @@ export default function Home() {
       // Even though it is a read transaction, since Signers are just special kinds of Providers,
       // We can use it in it's place
       const signer = await getProviderOrSigner(true);
-      const whitelistContract = new Contract(
-        WHITELIST_CONTRACT_ADDRESS,
-        abi,
-        signer
-      );
+      const whitelistContract = new Contract(contractAddress, ABI, signer);
       // Get the address associated to the signer which is connected to  MetaMask
       const address = await signer.getAddress();
       // call the whitelistedAddresses from the contract
@@ -134,14 +123,52 @@ export default function Home() {
     try {
       // Get the provider from web3Modal, which in our case is MetaMask
       // When used for the first time, it prompts the user to connect their wallet
-      await getProviderOrSigner();
+      await getProviderOrSigner()
+        .then((data) => {
+          const chainId = parseInt(data.provider.chainId.slice(2), 16);
+          if (chainId === 5) {
+            setContractAddress(GOERLI_WHITELIST_CONTRACT_ADDRESS);
+          } else if (chainId === 11155111) {
+            setContractAddress(SEPOLIA_WHITELIST_CONTRACT_ADDRESS);
+          } else {
+            window.alert("Change the network to Goerli or Sepolia");
+            throw new Error("Change network to Goerli or Sepolia");
+          }
+          console.log("data", parseInt(data.provider.chainId.slice(2), 16));
+        })
+        .finally(() => {
+          checkWhitelist();
+        });
+      // .finally((data) => {
+      //   console.log(data._network.chainId);
+      //   const chainId = data.getNetwork();
+      //   console.log(chainId);
+      // if (chainId === 5) {
+      //   setContractAddress(GOERLI_WHITELIST_CONTRACT_ADDRESS);
+      // } else if (chainId === 11155111) {
+      //   setContractAddress(SEPOLIA_WHITELIST_CONTRACT_ADDRESS);
+      // } else {
+      //   window.alert("Change the network to Goerli or Sepolia");
+      //   throw new Error("Change network to Goerli or Sepolia");
+      // }
+      console.log("connect wallet", contractAddress);
+      // }
+      // );
+
       setWalletConnected(true);
 
-      checkIfAddressInWhitelist();
-      getNumberOfWhitelisted();
+      // checkIfAddressInWhitelist();
+      // getNumberOfWhitelisted();
+      // await checkWhitelist();
     } catch (err) {
       console.error(err);
     }
+  };
+
+  const checkWhitelist = async () => {
+    checkIfAddressInWhitelist();
+    getNumberOfWhitelisted();
+    console.log("check Whitelist", contractAddress);
   };
 
   /*
@@ -182,13 +209,62 @@ export default function Home() {
       // Assign the Web3Modal class to the reference object by setting it's `current` value
       // The `current` value is persisted throughout as long as this page is open
       web3ModalRef.current = new Web3Modal({
-        network: "goerli",
+        network: "sepolia",
         providerOptions: {},
         disableInjectedProvider: false,
       });
       connectWallet();
     }
   }, [walletConnected]);
+
+  const networkChanged = (chainId) => {
+    console.log(`Chain ID changed to `, parseInt(chainId.slice(2), 16));
+    window.location.reload(); // Refresh page to get new chain ID. This is a hidden feature. Learn more about it [here](https://codegeex.cn).
+
+    try {
+      if (parseInt(chainId.slice(2), 16) === 5) {
+        setContractAddress(GOERLI_WHITELIST_CONTRACT_ADDRESS);
+      } else if (parseInt(chainId.slice(2), 16) === 11155111) {
+        setContractAddress(SEPOLIA_WHITELIST_CONTRACT_ADDRESS);
+      } else {
+        window.alert("Change the network to Goerli or Sepolia");
+        throw new Error("Change network to Goerli or Sepolia");
+      }
+    } catch (error) {
+      console.error(error);
+    }
+  };
+
+  useEffect(() => {
+    window.ethereum.on("chainChanged", networkChanged);
+
+    return () => {
+      window.ethereum.removeListener("chainChanged", networkChanged);
+    };
+  }, []);
+
+  // useEffect(() => {
+  //   checkWhitelist();
+  // }, [contractAddress]);
+
+  // useEffect(() => {
+  //   const connectHandler = async () => {
+  //     const accounts = await window.ethereum.request({
+  //       method: "eth_accounts",
+  //     });
+  //     console.log("fired");
+  //     if (accounts.length > 0) {
+  //       console.log(walletConnected);
+  //       setWalletConnected(true);
+  //     }
+  //   };
+
+  //   if (window.ethereum.isConnected()) {
+  //     window.ethereum.on("connect", connectHandler);
+  //     console.log("check connection", window.ethereum.isConnected());
+  //   }
+  // }, []);
+  console.log("this is check useState", contractAddress);
 
   return (
     <div>
