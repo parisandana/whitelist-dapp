@@ -207,6 +207,7 @@ export default function Home() {
     console.log(`Chain ID changed to `, parseInt(chainId.slice(2), 16));
     window.location.reload(); // Refresh page to get new chain ID. This is a hidden feature. Learn more about it [here](https://codegeex.cn).
 
+    console.log("network changed");
     try {
       if (parseInt(chainId.slice(2), 16) === 5) {
         setContractAddress(GOERLI_WHITELIST_CONTRACT_ADDRESS);
